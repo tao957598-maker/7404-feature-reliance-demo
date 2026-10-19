@@ -1,4 +1,4 @@
-# 实验 1 方法演示（M1 MacBook Air，默认 800 张）
+# 实验 1 方法演示demo（默认 800 张）
 
 这是 [Burgert 等人的论文](https://proceedings.neurips.cc/paper_files/paper/2025/file/57a9b97477b67936298489e3c1417b0a-Paper-Conference.pdf)中实验 1 的可运行**方法演示**。它参考[作者开源仓库](https://github.com/tomburgert/feature-reliance)的图像处理和评分思路，直接使用三个公开的预训练权重，不训练或微调。
 
