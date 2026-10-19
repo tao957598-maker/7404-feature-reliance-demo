@@ -36,7 +36,7 @@
 
 ## 数据与处理
 
-默认按 [Zenodo ImageNet16 ZIP](https://zenodo.org/records/8027520) 的每个验证集 WNID 文件夹，**按文件名排序并取前 50 张**。这不是随机抽样；结果中仍记录随机种子 `1`，用于 Patch Shuffle 的固定打乱顺序。`results/demo_800/sample_manifest.csv` 保存完整文件清单。
+默认按 [Zenodo ImageNet16 ZIP](https://zenodo.org/records/8027520) 的每个验证集 WNID 文件夹，**按文件名排序并取前 50 张**。这不是随机抽样；结果中仍记录随机种子 `1`，用于 Patch Shuffle 的固定打乱顺序。仓库追踪 `config/sample_manifest_800.csv`，列出 800 张图片的 ZIP 内路径、WNID 和大类，不包含原图。每次运行都会核对实际选图与这份清单；`--half` 和 `--smoke` 使用各类清单的前 25 张或前 1 张。
 
 Zenodo 原始 ZIP 约 885 MB。服务器支持 HTTP Range，程序只下载 ZIP 索引和被选图片的字节区间；选中 ZIP 条目逐个用 CRC 校验。磁盘上的稀疏 ZIP 文件显示逻辑大小约 885 MB，实际占用只相当于所下载的区间。`--data-zip` 模式会校验完整 ZIP 的 MD5。若远端不再支持 Range，请先手动下载完整 ZIP 并用 `--data-zip` 指定。
 
@@ -56,7 +56,7 @@ Zenodo 原始 ZIP 约 885 MB。服务器支持 HTTP Range，程序只下载 ZIP 
 
 默认保存在 `results/demo_800/`：
 
-- `sample_manifest.csv`：所用 800 张图的路径、WNID 和大类；
+- `sample_manifest.csv`：所用 800 张图的路径、WNID 和大类，与仓库追踪的 `config/sample_manifest_800.csv` 一致；
 - `metrics.csv`：3 个模型 × 5 个条件，共 15 行的正确数、原始准确率和相对准确率；
 - `predictions.csv`：逐图的大类概率及判定，便于检查；
 - `category_metrics.csv`：每个模型、条件和图片大类的正确数与准确率；

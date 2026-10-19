@@ -143,6 +143,21 @@ def select_samples(infos: list[zipfile.ZipInfo], per_class: int, category_map: d
     return samples
 
 
+def verify_sample_manifest(samples: list[dict], per_class: int) -> None:
+    """Require every run to use the published 800-image list (or its class prefixes)."""
+    with (ROOT / "config" / "sample_manifest_800.csv").open(newline="", encoding="utf-8") as stream:
+        manifest = list(csv.DictReader(stream))
+    by_category: dict[str, list[dict]] = defaultdict(list)
+    for row in manifest:
+        by_category[row["category"]].append(row)
+    if len(manifest) != 800 or len(by_category) != 16 or any(len(rows) != 50 for rows in by_category.values()):
+        raise ValueError("The tracked 800-image sample manifest is incomplete")
+    expected = [row for category in sorted(by_category) for row in by_category[category][:per_class]]
+    actual = [{key: sample[key] for key in ("path", "wnid", "category")} for sample in samples]
+    if actual != expected:
+        raise ValueError("Selected images differ from config/sample_manifest_800.csv")
+
+
 def prepare_sparse_zip(per_class: int, category_map: dict[str, list[str]], data_dir: Path) -> tuple[Path, list[dict]]:
     """Retrieve the ZIP directory and only the selected image byte ranges."""
     data_dir.mkdir(parents=True, exist_ok=True)
@@ -409,6 +424,7 @@ def main() -> None:
     else:
         archive_path, samples = prepare_sparse_zip(per_class, category_map, args.data_dir)
         data_mode = "sparse-zip-selected-entries-crc-verified"
+    verify_sample_manifest(samples, per_class)
     images_path = prepare_images(archive_path, samples, args.data_dir / "processed")
     write_csv(output / "sample_manifest.csv", [{key: sample[key] for key in ("path", "wnid", "category")} for sample in samples])
     device = decide_device(args.device)
