@@ -39,6 +39,8 @@ import torch
 from PIL import Image
 from timm.data import ImageNetInfo
 
+from plot_categories import make_category_plot
+
 
 ROOT = Path(__file__).resolve().parent
 DATA_URL = "https://zenodo.org/api/records/8027520/files/imagenet16.zip/content"
@@ -454,6 +456,7 @@ def main() -> None:
     write_csv(output / "metrics.csv", ordered_results)
     write_csv(output / "predictions.csv", ordered_predictions)
     plot_results(ordered_results, output / "comparison.png")
+    make_category_plot(output)
     report = {
         "disclaimer": "Method demo: public ImageNet16 subset; ResNet50-standard is a proxy; not a reproduction of the paper's Figure 3 values.",
         "paper": "Burgert et al., NeurIPS 2025, Experiment I",

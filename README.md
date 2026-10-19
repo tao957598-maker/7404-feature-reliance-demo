@@ -58,8 +58,16 @@ Zenodo 原始 ZIP 约 885 MB。服务器支持 HTTP Range，程序只下载 ZIP 
 - `sample_manifest.csv`：所用 400 张图的路径、WNID 和大类；
 - `metrics.csv`：3 个模型 × 5 个条件，共 15 行的正确数、原始准确率和相对准确率；
 - `predictions.csv`：逐图的大类概率及判定，便于检查；
+- `category_metrics.csv`：每个模型、条件和图片大类的正确数与准确率；
 - `report.json`：方法参数、数据来源与校验方式、真实模型仓库修订号和 SHA-256、运行环境及耗时；
 - `comparison.png`：原始准确率与相对准确率对比图。
+- `category_comparison.png`：四种抑制条件的逐大类准确率图；点为各类准确率，竖线为该模型在所有图片上的准确率。图中只含三个 CNN，没有 human 数据。
+
+已有 `predictions.csv` 和 `metrics.csv` 时，无需重新推理即可单独重画逐类图：
+
+```bash
+.venv/bin/python plot_categories.py results/demo_400
+```
 
 `--smoke` 与 `--full` 分别输出到 `results/demo_16/`、`results/demo_800/`。这些结果和 `data/`、`.venv/` 都被 `.gitignore` 排除，不随 Git 仓库分发。
 
