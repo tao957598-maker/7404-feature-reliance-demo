@@ -1,0 +1,17 @@
+{
+  "standard_proxy": {
+    "repository": "timm/resnet50.tv_in1k",
+    "revision": "78f3ecfdb38e06d9b8397f662e7ab8fee96026fa",
+    "sha256": "5d061a3c593d795bfe682d9b152bafbcf550579873492def3515b46db1189888"
+  },
+  "resnet50_sota": {
+    "repository": "timm/resnet50.a1_in1k",
+    "revision": "767268603ca0cb0bfe326fa87277f19c419566ef",
+    "sha256": "773525d5821de224f8f30c33377b7a795d7863e08522698200d3217d3f2a41bb"
+  },
+  "convnextv2": {
+    "repository": "timm/convnextv2_tiny.fcmae_ft_in22k_in1k",
+    "revision": "b1dd46230e80bf4cc3fa0c3c905db2c3ec53a817",
+    "sha256": "6652fd90fc9c23977659e58515778e16fbbcd43f0b01fc693089cebe6d64c2a9"
+  }
+}
