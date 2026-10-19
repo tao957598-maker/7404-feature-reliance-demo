@@ -144,7 +144,7 @@ def select_samples(infos: list[zipfile.ZipInfo], per_class: int, category_map: d
 
 
 def prepare_sparse_zip(per_class: int, category_map: dict[str, list[str]], data_dir: Path) -> tuple[Path, list[dict]]:
-    """Retrieve ZIP directory and only the selected file ranges (about 45 MB for 400 images)."""
+    """Retrieve the ZIP directory and only the selected image byte ranges."""
     data_dir.mkdir(parents=True, exist_ok=True)
     sparse_path = data_dir / f"imagenet16_n{per_class}_sparse.zip"
     marker = data_dir / f"imagenet16_n{per_class}_sparse.complete.json"
@@ -384,7 +384,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Approximate, runnable Experiment I demo (not paper-number reproduction).")
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--smoke", action="store_true", help="1 image per class (16 total)")
-    group.add_argument("--full", action="store_true", help="50 images per class (800 total)")
+    group.add_argument("--half", action="store_true", help="25 images per class (400 total)")
+    group.add_argument("--full", action="store_true", help="50 images per class (800 total; also the default)")
     parser.add_argument("--data-zip", type=Path, help="Locally downloaded, MD5-verified Zenodo imagenet16.zip")
     parser.add_argument("--data-dir", type=Path, default=ROOT / "data", help="Download / image cache directory")
     parser.add_argument("--weights-dir", type=Path, default=ROOT / "data" / "weights", help="Model checkpoint cache")
@@ -394,7 +395,7 @@ def main() -> None:
     args = parser.parse_args()
     if args.batch_size < 1 or args.batch_size > 8:
         parser.error("--batch-size must be between 1 and 8 on this small-memory demo")
-    per_class = 1 if args.smoke else 50 if args.full else 25
+    per_class = 1 if args.smoke else 25 if args.half else 50
     output = args.output or ROOT / "results" / f"demo_{16 * per_class}"
     output.mkdir(parents=True, exist_ok=True)
     started = time.monotonic()

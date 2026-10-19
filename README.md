@@ -1,4 +1,4 @@
-# 实验 1 方法演示（M1 MacBook Air，默认 400 张）
+# 实验 1 方法演示（M1 MacBook Air，默认 800 张）
 
 这是 [Burgert 等人的论文](https://proceedings.neurips.cc/paper_files/paper/2025/file/57a9b97477b67936298489e3c1417b0a-Paper-Conference.pdf)中实验 1 的可运行**方法演示**。它参考[作者开源仓库](https://github.com/tomburgert/feature-reliance)的图像处理和评分思路，直接使用三个公开的预训练权重，不训练或微调。
 
@@ -8,9 +8,9 @@
 
 - 2021 款 M1 MacBook Air、8 GB 内存可以运行。程序一次只载入一个模型，默认批量大小为 2；自动选择 MPS，若不可用则使用 CPU。首次运行的实际时间依网络、设备和 PyTorch 后端而异。
 - macOS **14 或更新版本**的 Apple Silicon，Python **3.12**；本仓库在 macOS 15.2 的 M1 上验证。建议至少预留 **4 GB** 可用磁盘空间。虚拟环境、权重和处理后的图片占主要空间。系统需要联网下载 Python 包、模型和图片。
-- 默认数据为每类 25 张、16 类共 **400 张**；每个模型评估 5 种条件，共 6,000 张次推理。`--full` 为每类 50 张、共 800 张，需要约两倍的推理和图片缓存。小样本的准确率及相对准确率波动更大，尤其是各模型或条件之间差距小时。
+- 默认数据为每类 50 张、16 类共 **800 张**；每个模型评估 5 种条件，共 12,000 张次推理。`--half` 为每类 25 张、共 400 张，计算量约减半，但准确率及相对准确率的波动会更大。
 
-本机实测：macOS 15.2、M1、8 GB 内存、MPS，权重已缓存但首次获取 400 张图片时，全流程 **220 秒**；其中三个模型评估约 29、29、47 秒。进程峰值 RSS 约 **485 MiB**（不等于全机内存，未单独统计 MPS 驱动分配）；虚拟环境占用约 **970 MiB**，数据与权重缓存约 **686 MiB**。这些是这次运行的记录，不是其他机器的耗时保证。
+本机实测：macOS 15.2、M1、8 GB 内存、MPS，依赖与权重已缓存、首次获取 800 张图片时，全流程 **390 秒（6 分 30 秒）**；其中三个模型评估约 57、59、97 秒。进程峰值 RSS 约 **679 MiB**（不等于全机内存，未单独统计 MPS 驱动分配）；虚拟环境占用约 **970 MiB**，数据与权重缓存约 **1311 MiB**（包括此前留下的 400 张缓存）。这些是这次运行的记录，不是其他机器的耗时保证。
 
 ## 一条命令运行
 
@@ -26,7 +26,8 @@
 
 ```bash
 ./run.sh --smoke       # 每类 1 张，先检查全流程
-./run.sh --full        # 每类 50 张，共 800 张
+./run.sh --half        # 每类 25 张，共 400 张
+./run.sh --full        # 显式指定每类 50 张，与默认相同
 ./run.sh --device cpu  # 强制 CPU
 ./run.sh --batch-size 1
 ```
@@ -35,9 +36,9 @@
 
 ## 数据与处理
 
-默认按 [Zenodo ImageNet16 ZIP](https://zenodo.org/records/8027520) 的每个验证集 WNID 文件夹，**按文件名排序并取前 25 张**。这不是随机抽样；结果中仍记录随机种子 `1`，用于 Patch Shuffle 的固定打乱顺序。`results/demo_400/sample_manifest.csv` 保存完整文件清单。
+默认按 [Zenodo ImageNet16 ZIP](https://zenodo.org/records/8027520) 的每个验证集 WNID 文件夹，**按文件名排序并取前 50 张**。这不是随机抽样；结果中仍记录随机种子 `1`，用于 Patch Shuffle 的固定打乱顺序。`results/demo_800/sample_manifest.csv` 保存完整文件清单。
 
-Zenodo 原始 ZIP 约 885 MB。服务器支持 HTTP Range，程序只下载 ZIP 索引和被选图片的字节区间，默认约 45 MB；选中 ZIP 条目逐个用 CRC 校验。磁盘上的稀疏 ZIP 文件显示逻辑大小约 885 MB，实际占用只相当于所下载的区间。`--data-zip` 模式会校验完整 ZIP 的 MD5。若远端不再支持 Range，请先手动下载完整 ZIP 并用 `--data-zip` 指定。
+Zenodo 原始 ZIP 约 885 MB。服务器支持 HTTP Range，程序只下载 ZIP 索引和被选图片的字节区间；选中 ZIP 条目逐个用 CRC 校验。磁盘上的稀疏 ZIP 文件显示逻辑大小约 885 MB，实际占用只相当于所下载的区间。`--data-zip` 模式会校验完整 ZIP 的 MD5。若远端不再支持 Range，请先手动下载完整 ZIP 并用 `--data-zip` 指定。
 
 每张图片先缩放到 224×224，再生成五种条件；生成后的同一份图片缓存供三个模型使用：
 
@@ -53,9 +54,9 @@ Zenodo 原始 ZIP 约 885 MB。服务器支持 HTTP Range，程序只下载 ZIP 
 
 ## 结果文件
 
-默认保存在 `results/demo_400/`：
+默认保存在 `results/demo_800/`：
 
-- `sample_manifest.csv`：所用 400 张图的路径、WNID 和大类；
+- `sample_manifest.csv`：所用 800 张图的路径、WNID 和大类；
 - `metrics.csv`：3 个模型 × 5 个条件，共 15 行的正确数、原始准确率和相对准确率；
 - `predictions.csv`：逐图的大类概率及判定，便于检查；
 - `category_metrics.csv`：每个模型、条件和图片大类的正确数与准确率；
@@ -66,10 +67,10 @@ Zenodo 原始 ZIP 约 885 MB。服务器支持 HTTP Range，程序只下载 ZIP 
 已有 `predictions.csv` 和 `metrics.csv` 时，无需重新推理即可单独重画逐类图：
 
 ```bash
-.venv/bin/python plot_categories.py results/demo_400
+.venv/bin/python plot_categories.py results/demo_800
 ```
 
-`--smoke` 与 `--full` 分别输出到 `results/demo_16/`、`results/demo_800/`。这些结果和 `data/`、`.venv/` 都被 `.gitignore` 排除，不随 Git 仓库分发。
+`--smoke` 与 `--half` 分别输出到 `results/demo_16/`、`results/demo_400/`。这些结果和 `data/`、`.venv/` 都被 `.gitignore` 排除，不随 Git 仓库分发。
 
 ## 复现范围与来源
 
