@@ -108,7 +108,7 @@ def make_category_plot(results_dir: Path) -> None:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("results_dir", type=Path, nargs="?", default=ROOT / "results" / "demo_400")
+    parser.add_argument("results_dir", type=Path, nargs="?", default=ROOT / "results" / "demo_800")
     args = parser.parse_args()
     make_category_plot(args.results_dir)
     print(f"Saved {args.results_dir / 'category_comparison.png'}")
