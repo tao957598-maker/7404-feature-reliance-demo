@@ -6,5 +6,5 @@ albumentations==1.4.1
 opencv-python-headless==4.10.0.84
 numpy==1.26.4
 Pillow==10.4.0
-matplotlib==3.9.1
+matplotlib==3.9.2
 safetensors==0.4.5
