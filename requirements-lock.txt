@@ -1,5 +1,5 @@
-# Tested on Python 3.12, macOS Apple Silicon (2026-10-19).
-# Regenerate after validation: .venv/bin/python -m pip freeze
+# Python 3.12 package pins shared by macOS and Windows launchers.
+# Recheck installation on both platforms when changing versions.
 albumentations==1.4.1
 anyio==4.15.1
 click==8.5.0

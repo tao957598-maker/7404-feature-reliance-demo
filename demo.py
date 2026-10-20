@@ -17,7 +17,6 @@ import os
 import platform
 import random
 import re
-import resource
 import sys
 import time
 import urllib.error
@@ -93,7 +92,21 @@ def sha256_file(path: Path) -> str:
 def allocated_bytes(path: Path) -> int:
     if not path.exists():
         return 0
-    return sum(item.stat().st_blocks * 512 for item in path.rglob("*") if item.is_file())
+    return sum(
+        stat.st_blocks * 512 if hasattr(stat, "st_blocks") else stat.st_size
+        for item in path.rglob("*") if item.is_file()
+        for stat in (item.stat(),)
+    )
+
+
+def peak_process_rss_mib() -> float | None:
+    """Return peak process RSS where resource is available (None on Windows)."""
+    try:
+        import resource
+    except ImportError:
+        return None
+    rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    return round(rss / (1024**2 if sys.platform == "darwin" else 1024), 1)
 
 
 def load_category_map(path: Path) -> dict[str, list[str]]:
@@ -319,10 +332,15 @@ def model_weights(label: str, repository: str, weights_dir: Path) -> tuple[Path,
 
 
 def decide_device(requested: str) -> torch.device:
-    available = torch.backends.mps.is_available()
-    if requested == "mps" and not available:
+    mps_available = hasattr(torch.backends, "mps") and torch.backends.mps.is_available()
+    cuda_available = torch.cuda.is_available()
+    if requested == "mps" and not mps_available:
         raise RuntimeError("MPS was requested but is unavailable; use --device auto or cpu")
-    return torch.device("mps" if (requested == "mps" or (requested == "auto" and available)) else "cpu")
+    if requested == "cuda" and not cuda_available:
+        raise RuntimeError("CUDA was requested but is unavailable; use --device auto or cpu")
+    if requested == "auto":
+        return torch.device("cuda" if cuda_available else "mps" if mps_available else "cpu")
+    return torch.device(requested)
 
 
 def score_probs(probabilities: np.ndarray, category: str, indices: dict[str, list[int]]) -> np.ndarray:
@@ -402,7 +420,7 @@ def main() -> None:
     parser.add_argument("--data-dir", type=Path, default=ROOT / "data", help="Download / image cache directory")
     parser.add_argument("--weights-dir", type=Path, default=ROOT / "data" / "weights", help="Model checkpoint cache")
     parser.add_argument("--output", type=Path, help="Output directory (default: results/demo_N)")
-    parser.add_argument("--device", choices=("auto", "mps", "cpu"), default="auto")
+    parser.add_argument("--device", choices=("auto", "mps", "cuda", "cpu"), default="auto")
     parser.add_argument("--batch-size", type=int, default=2)
     args = parser.parse_args()
     if args.batch_size < 1 or args.batch_size > 8:
@@ -442,12 +460,14 @@ def main() -> None:
         try:
             result_rows, predictions = run_model(model, images_path, samples, indices, device, args.batch_size)
         except RuntimeError as exc:
-            if args.device != "auto" or device.type != "mps":
+            if args.device != "auto" or device.type not in ("mps", "cuda"):
                 raise
-            print(f"MPS failed ({exc}); retrying {label} on CPU", file=sys.stderr, flush=True)
+            print(f"{device.type.upper()} failed ({exc}); retrying {label} on CPU", file=sys.stderr, flush=True)
             model = model.to("cpu")
-            if hasattr(torch, "mps"):
+            if device.type == "mps" and hasattr(torch, "mps"):
                 torch.mps.empty_cache()
+            if device.type == "cuda":
+                torch.cuda.empty_cache()
             actual_device = torch.device("cpu")
             result_rows, predictions = run_model(model, images_path, samples, indices, actual_device, args.batch_size)
         baseline = result_rows[0]["accuracy"]
@@ -462,8 +482,10 @@ def main() -> None:
         model_meta[label] = provenance
         del model
         gc.collect()
-        if hasattr(torch, "mps") and torch.backends.mps.is_available():
+        if hasattr(torch, "mps") and hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
             torch.mps.empty_cache()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
 
     ordered_results = [{key: row[key] for key in ("model", "condition", "correct", "count", "accuracy", "relative_accuracy")} for row in all_results]
     ordered_predictions = [{key: row[key] for key in ("model", "condition", "path", "category", "category_probability", "correct")} for row in all_predictions]
@@ -483,7 +505,8 @@ def main() -> None:
             "platform": platform.platform(), "python": sys.version.split()[0],
             "torch": torch.__version__, "timm": timm.__version__,
             "wall_seconds": round(time.monotonic() - started, 2),
-            "peak_process_rss_mib": round(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / (1024**2 if sys.platform == "darwin" else 1024), 1),
+            "peak_process_rss_mib": peak_process_rss_mib(),
+            "disk_usage_measure": "allocated_blocks" if hasattr(ROOT.stat(), "st_blocks") else "logical_file_sizes",
             "venv_disk_mib": round(allocated_bytes(ROOT / ".venv") / (1024**2), 1),
             "data_disk_mib": round(allocated_bytes(args.data_dir) / (1024**2), 1),
         },
