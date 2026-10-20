@@ -2,7 +2,7 @@
 
 这是 [Burgert 等人的论文](https://proceedings.neurips.cc/paper_files/paper/2025/file/57a9b97477b67936298489e3c1417b0a-Paper-Conference.pdf)中实验 1 的可运行**方法演示**。它参考[作者开源仓库](https://github.com/tomburgert/feature-reliance)的图像处理和评分思路，直接使用三个公开的预训练权重，不训练或微调。
 
-**注意：这不是论文实验1图 3 数值的严格复现。** 原论文作者在ImageNet中通过人工筛选选择每类 50 张、共 800 张图片且作者仓库未提供这份图片清单，其也未提供其自行训练的ResNet50-standard checkpoint故。本项目改用公开的 [ImageNet16 验证集](https://zenodo.org/records/8027520)，一共16类，按文件名每类取前 50 张；另把 [`timm/resnet50.tv_in1k`](https://huggingface.co/timm/resnet50.tv_in1k) 明确标为 **ResNet50-standard 代理模型**，另两个模型（依据原作者的描述）选用timm 预训练 checkpoint，分别是 [`timm/resnet50.a1_in1k`](https://huggingface.co/timm/resnet50.a1_in1k) 和 [`timm/convnextv2_tiny.fcmae_ft_in22k_in1k`](https://huggingface.co/timm/convnextv2_tiny.fcmae_ft_in22k_in1k)。结果适合检查代码流程、比较趋势，不能按论文数值或排序验收。
+**注意：这不是论文实验 1 图 3 数值的严格复现。** 原论文作者从 ImageNet 人工筛选每类 50 张、共 800 张图片，但作者仓库未提供图片清单，也未提供其自行训练的 ResNet50-standard checkpoint。本项目改用公开的 [ImageNet16 验证集](https://zenodo.org/records/8027520)，共 16 类，按文件名每类取前 50 张；另把 [`timm/resnet50.tv_in1k`](https://huggingface.co/timm/resnet50.tv_in1k) 明确标为 **ResNet50-standard 代理模型**，另两个模型（依据原作者的描述）选用 timm 预训练 checkpoint，分别是 [`timm/resnet50.a1_in1k`](https://huggingface.co/timm/resnet50.a1_in1k) 和 [`timm/convnextv2_tiny.fcmae_ft_in22k_in1k`](https://huggingface.co/timm/convnextv2_tiny.fcmae_ft_in22k_in1k)。结果适合检查代码流程、比较趋势，不能按论文数值或排序验收。
 
 ## 电脑配置
 
@@ -79,10 +79,16 @@ Zenodo 原始 ZIP 约 885 MB。服务器支持 HTTP Range，程序只下载 ZIP 
 - `comparison.png`：原始准确率与相对准确率对比图。
 - `category_comparison.png`：四种抑制条件的逐大类准确率图；点为各类准确率，竖线为该模型在所有图片上的准确率。图中只含三个 CNN，没有 human 数据。
 
-已有 `predictions.csv` 和 `metrics.csv` 时，无需重新推理即可单独重画逐类图：
+已有 `predictions.csv` 和 `metrics.csv` 时，无需重新推理即可单独重画逐类图。macOS 终端运行：
 
 ```bash
 .venv/bin/python plot_categories.py results/demo_800
+```
+
+Windows PowerShell 运行：
+
+```powershell
+.\.venv\Scripts\python.exe plot_categories.py results\demo_800
 ```
 
 `--smoke` 输出到 `results/demo_16/`。这些结果和 `data/`、`.venv/` 都被 `.gitignore` 排除，不随 Git 仓库分发。Windows 系统的 `report.json` 中，`peak_process_rss_mib` 为 `null`，磁盘占用按文件的逻辑大小统计；macOS 则记录进程峰值 RSS 和实际分配的文件块大小。
