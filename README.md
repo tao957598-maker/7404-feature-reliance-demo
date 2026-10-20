@@ -1,4 +1,4 @@
-# 实验 1 方法演示 demo（macOS / Windows，默认 800 张）
+# 实验 1 方法演示 demo（Apple Silicon macOS / Windows x64，默认 800 张）
 
 这是 [Burgert 等人的论文](https://proceedings.neurips.cc/paper_files/paper/2025/file/57a9b97477b67936298489e3c1417b0a-Paper-Conference.pdf)中实验 1 的可运行**方法演示**。它参考[作者开源仓库](https://github.com/tomburgert/feature-reliance)的图像处理和评分思路，直接使用三个公开的预训练权重，不训练或微调。
 
@@ -6,13 +6,13 @@
 
 ## 电脑配置
 
-- 使用 **64 位 Python 3.12**。支持 macOS 和 Windows 的原生 Python 环境；程序一次只载入一个模型，默认批量大小为 2。自动选择可用的 CUDA、Apple MPS 或 CPU，也可以用 `--device cpu` 强制使用 CPU。
+- 使用 **64 位 Python 3.12**。当前固定的 PyTorch 版本支持 Apple Silicon Mac 和 x86-64 Windows 电脑；Intel Mac 与 Windows ARM 未纳入本项目的兼容范围。程序一次只载入一个模型，默认批量大小为 2。自动选择可用的 CUDA、Apple MPS 或 CPU，也可以用 `--device cpu` 强制使用 CPU。
 - 本仓库已在 macOS 15.2 的 M1 MacBook Air（8 GB 内存）运行。Windows 建议使用 Windows 10/11 的 64 位版本。macOS 建议至少预留 **4 GB** 可用磁盘空间；Windows 建议至少 **6 GB**，因为稀疏 ZIP 可能占用完整文件大小。首次运行需要联网下载 Python 包、模型权重和图片。Windows 上的性能和内存占用可能不同。
 - 默认数据为每类 50 张、16 类共 **800 张**；每个模型评估 5 种条件，共 12,000 张次推理。
 
 本机实测：macOS 15.2、M1、8 GB 内存、MPS，依赖与权重已缓存、首次获取 800 张图片时，全流程 **390 秒（6 分 30 秒）**；其中三个模型评估约 57、59、97 秒。进程峰值 RSS 约 **679 MiB**（不等于全机内存，未单独统计 MPS 驱动分配）；虚拟环境占用约 **970 MiB**。这些是这次运行的记录，不是其他机器的耗时保证。
 
-## macOS 运行方法
+## macOS（Apple Silicon）运行方法
 
 先安装 [Python 3.12](https://www.python.org/downloads/) 和 Git，在“终端”中运行：
 
@@ -25,7 +25,7 @@ cd 7404-feature-reliance-demo
 
 `--smoke` 每类只运行 1 张，先检查环境和完整流程；不带参数时运行 800 张。若已经在仓库目录中，可以直接从 `./run.sh --smoke` 开始。也可以使用 `python3.12 run.py` 替代 `./run.sh`。
 
-## Windows 运行方法
+## Windows（x86-64）运行方法
 
 安装 [64 位 Python 3.12](https://www.python.org/downloads/windows/)（安装时勾选 **Add python.exe to PATH**）和 [Git for Windows](https://git-scm.com/download/win)。打开 **PowerShell**，运行：
 
