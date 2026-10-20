@@ -2,7 +2,7 @@
 
 这是 [Burgert 等人的论文](https://proceedings.neurips.cc/paper_files/paper/2025/file/57a9b97477b67936298489e3c1417b0a-Paper-Conference.pdf)中实验 1 的可运行**方法演示**。它参考[作者开源仓库](https://github.com/tomburgert/feature-reliance)的图像处理和评分思路，直接使用三个公开的预训练权重，不训练或微调。
 
-**这不是论文图 3 数值的严格复现。**论文使用人工筛选的每类 50 张、共 800 张图片；作者仓库未提供这份图片清单，也未提供其自行训练的 ResNet50-standard checkpoint。本项目改用公开的 [ImageNet16 验证集](https://zenodo.org/records/8027520)，一共16类，按文件名每类取前 50 张；把 [`timm/resnet50.tv_in1k`](https://huggingface.co/timm/resnet50.tv_in1k) 明确标为 **ResNet50-standard 代理模型**，另两个权重为 [`timm/resnet50.a1_in1k`](https://huggingface.co/timm/resnet50.a1_in1k) 和 [`timm/convnextv2_tiny.fcmae_ft_in22k_in1k`](https://huggingface.co/timm/convnextv2_tiny.fcmae_ft_in22k_in1k)。结果适合检查代码流程、比较趋势，不能按论文数值或排序验收。
+**注意：这不是论文实验1图 3 数值的严格复现。** 原论文作者在ImageNet中通过人工筛选选择每类 50 张、共 800 张图片且作者仓库未提供这份图片清单，其也未提供其自行训练的ResNet50-standard checkpoint故。本项目改用公开的 [ImageNet16 验证集](https://zenodo.org/records/8027520)，一共16类，按文件名每类取前 50 张；另把 [`timm/resnet50.tv_in1k`](https://huggingface.co/timm/resnet50.tv_in1k) 明确标为 **ResNet50-standard 代理模型**，另两个模型（依据原作者的描述）选用timm 预训练 checkpoint，分别是 [`timm/resnet50.a1_in1k`](https://huggingface.co/timm/resnet50.a1_in1k) 和 [`timm/convnextv2_tiny.fcmae_ft_in22k_in1k`](https://huggingface.co/timm/convnextv2_tiny.fcmae_ft_in22k_in1k)。结果适合检查代码流程、比较趋势，不能按论文数值或排序验收。
 
 ## 电脑配置
 
