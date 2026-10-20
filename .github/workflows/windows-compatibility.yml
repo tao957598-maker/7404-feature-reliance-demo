@@ -1,0 +1,24 @@
+name: Windows compatibility
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  windows-demo:
+    runs-on: windows-2022
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          architecture: x64
+      - name: Check the setup and 16-image workflow
+        run: python run.py --smoke --device cpu
+      - name: Run the default 800-image workflow
+        run: python run.py --device cpu
+      - name: Check the generated results
+        run: |
+          python -c "import csv, pathlib; p = pathlib.Path('results/demo_800'); rows = list(csv.DictReader((p / 'metrics.csv').open(encoding='utf-8'))); samples = list(csv.DictReader((p / 'sample_manifest.csv').open(encoding='utf-8'))); assert len(rows) == 15 and all(int(row['count']) == 800 for row in rows); assert len(samples) == 800; assert (p / 'comparison.png').stat().st_size > 1000; assert (p / 'category_comparison.png').stat().st_size > 1000; print('Windows 800-image demo produced all expected results')"
