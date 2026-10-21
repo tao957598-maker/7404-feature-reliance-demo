@@ -6,7 +6,7 @@
 
 ## 电脑配置
 
-- 使用 **64 位 Python 3.12**。当前固定的 PyTorch 版本支持 Apple Silicon Mac 和 x86-64 Windows 电脑；Intel Mac 与 Windows ARM 未纳入本项目的兼容范围。程序一次只载入一个模型，默认批量大小为 2。自动选择可用的 CUDA、Apple MPS 或 CPU，也可以用 `--device cpu` 强制使用 CPU。
+- 使用 **64 位 Python 3.12**。当前固定的 PyTorch 版本支持 Apple Silicon Mac 和 x86-64 Windows 电脑；Intel Mac 与 Windows ARM 未纳入本项目的兼容范围。程序一次只载入一个模型，默认批量大小为 2。自动选择可用的 CUDA、Apple MPS 或 CPU，也可以用 `--device cpu` 强制使用 CPU。Windows 默认使用 1 个 PyTorch CPU 线程；macOS 最多使用 4 个。
 - 本仓库已在 macOS 15.2 的 M1 MacBook Air（8 GB 内存）运行。Windows 建议使用 Windows 10/11 的 64 位版本。macOS 建议至少预留 **4 GB** 可用磁盘空间；Windows 建议至少 **6 GB**，因为稀疏 ZIP 可能占用完整文件大小。首次运行需要联网下载 Python 包、模型权重和图片。Windows 上的性能和内存占用可能不同。
 - 默认数据为每类 50 张、16 类共 **800 张**；每个模型评估 5 种条件，共 12,000 张次推理。
 
@@ -38,7 +38,11 @@ py -3.12 run.py
 
 如果电脑没有 `py` 命令，但 `python --version` 显示 3.12，可将上述两处 `py -3.12` 改成 `python`。无需激活虚拟环境，也无需运行 PowerShell 脚本。程序会在 Windows 中使用 `.venv\Scripts\python.exe`；macOS 使用 `.venv/bin/python`。
 
+**Windows CPU 注意：**早期版本在 Windows 上使用 4 个 PyTorch CPU 线程时，两种 ResNet 曾产生异常大的 logit，准确率接近零；此前生成的 Windows 图表不能用于汇报。当前版本将 Windows 的 CPU 线程数设为 1，并在 logit 或原图准确率异常时停止运行。`--batch-size 1` 调整的是每批图片数，不会改变 CPU 线程数。单线程可能增加运行时间。若已克隆旧版，请先在仓库目录执行 `git pull`，再按上面的命令重跑；已经下载的图片和权重缓存可以继续使用。
+
 两个系统共用的 `run.py` 会自动建立 `.venv`、安装 `requirements-lock.txt` 中固定版本的 Python 包，然后下载资源、处理图片并评估。`requirements.txt` 列出直接依赖；锁文件同时固定间接依赖。再次运行复用已下载的权重和处理缓存。运行时终端会输出每个模型、每种条件的准确率。
+
+运行结束后可额外检查结果文件与准确率是否合理。macOS 使用 `python3.12 validate_results.py results/demo_800`；Windows PowerShell 使用 `py -3.12 validate_results.py results\demo_800`。这只是针对本仓库固定图片及权重的故障检查，不代表与论文数值相符。
 
 可选命令：
 
@@ -75,7 +79,7 @@ Zenodo 原始 ZIP 约 885 MB。服务器支持 HTTP Range，程序只下载 ZIP 
 - `metrics.csv`：3 个模型 × 5 个条件，共 15 行的正确数、原始准确率和相对准确率；
 - `predictions.csv`：逐图的大类概率及判定，便于检查；
 - `category_metrics.csv`：每个模型、条件和图片大类的正确数与准确率；
-- `report.json`：方法参数、数据来源与校验方式、真实模型仓库修订号和 SHA-256、运行环境及耗时；
+- `report.json`：方法参数、数据来源与校验方式、真实模型仓库修订号和 SHA-256、运行环境、PyTorch CPU 线程数及耗时；
 - `comparison.png`：原始准确率与相对准确率对比图。
 - `category_comparison.png`：四种抑制条件的逐大类准确率图；点为各类准确率，竖线为该模型在所有图片上的准确率。图中只含三个 CNN，没有 human 数据。
 

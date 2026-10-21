@@ -363,9 +363,22 @@ def run_model(model: torch.nn.Module, images_path: Path, samples: list[dict], in
                 batch = np.array(images[condition_index, start:end], copy=True)
                 tensor = torch.from_numpy(batch).permute(0, 3, 1, 2).to(device=device, dtype=torch.float32)
                 tensor = (tensor / 255.0 - mean) / std
-                probabilities = model(tensor).softmax(dim=1).cpu().numpy()
-                if probabilities.shape != (end - start, 1000):
-                    raise ValueError(f"Expected 1000 ImageNet logits, got {probabilities.shape}")
+                logits = model(tensor)
+                if logits.shape != (end - start, 1000):
+                    raise ValueError(f"Expected 1000 ImageNet logits, got {logits.shape}")
+                # A Windows CPU multithreading failure produced finite logits near 1e19.
+                # Check before softmax, which can hide the failure behind zero probabilities.
+                max_abs_logit = float(logits.abs().amax().item())
+                if not np.isfinite(max_abs_logit) or max_abs_logit > 1e6:
+                    raise ValueError(
+                        f"Invalid {model.__class__.__name__} logits on {device} "
+                        f"for {condition} images {start}-{end - 1}: "
+                        f"max absolute logit = {max_abs_logit:.3g}. "
+                        "The predictions are unreliable; see the README's Windows CPU note."
+                    )
+                probabilities = logits.softmax(dim=1).cpu().numpy()
+                if not np.isfinite(probabilities).all():
+                    raise ValueError(f"Non-finite probabilities from {model.__class__.__name__} on {device}")
                 for offset, sample in enumerate(samples[start:end]):
                     probability = float(score_probs(probabilities[offset:offset + 1], sample["category"], indices)[0])
                     is_correct = probability > 0.5
@@ -429,7 +442,9 @@ def main() -> None:
     output = args.output or ROOT / "results" / f"demo_{16 * per_class}"
     output.mkdir(parents=True, exist_ok=True)
     started = time.monotonic()
-    torch.set_num_threads(min(4, os.cpu_count() or 1))
+    # On Windows with the pinned PyTorch 2.4.0 build, four CPU threads produced
+    # corrupt ResNet logits on both a user's PC and the Windows CI runner.
+    torch.set_num_threads(1 if sys.platform == "win32" else min(4, os.cpu_count() or 1))
     cv2.setNumThreads(1)
     category_map = load_category_map(ROOT / "config" / "imagenet16_category_map.txt")
     indices = category_indices(category_map)
@@ -443,7 +458,7 @@ def main() -> None:
     images_path = prepare_images(archive_path, samples, args.data_dir / "processed")
     write_csv(output / "sample_manifest.csv", [{key: sample[key] for key in ("path", "wnid", "category")} for sample in samples])
     device = decide_device(args.device)
-    print(f"Device: {device}; images: {len(samples)}; batch size: {args.batch_size}", flush=True)
+    print(f"Device: {device}; images: {len(samples)}; batch size: {args.batch_size}; CPU threads: {torch.get_num_threads()}", flush=True)
 
     all_results: list[dict] = []
     all_predictions: list[dict] = []
@@ -471,6 +486,14 @@ def main() -> None:
             actual_device = torch.device("cpu")
             result_rows, predictions = run_model(model, images_path, samples, indices, actual_device, args.batch_size)
         baseline = result_rows[0]["accuracy"]
+        # Fixed images and fixed pretrained weights should classify most originals.
+        # This catches plausible-looking but incorrect outputs before writing charts.
+        minimum_original_accuracy = 0.75 if len(samples) == 800 else 0.5
+        if baseline < minimum_original_accuracy:
+            raise ValueError(
+                f"Implausible original-image accuracy for {label}: {baseline:.4f}. "
+                "The predictions are unreliable; see the README's Windows CPU note."
+            )
         for row in result_rows:
             row["model"] = label
             row["relative_accuracy"] = row["accuracy"] / baseline if baseline else None
@@ -504,6 +527,7 @@ def main() -> None:
         "runtime": {
             "platform": platform.platform(), "python": sys.version.split()[0],
             "torch": torch.__version__, "timm": timm.__version__,
+            "torch_cpu_threads": torch.get_num_threads(),
             "wall_seconds": round(time.monotonic() - started, 2),
             "peak_process_rss_mib": peak_process_rss_mib(),
             "disk_usage_measure": "allocated_blocks" if hasattr(ROOT.stat(), "st_blocks") else "logical_file_sizes",
