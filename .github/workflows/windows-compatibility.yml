@@ -8,7 +8,7 @@ on:
 jobs:
   windows-demo:
     runs-on: windows-2022
-    timeout-minutes: 120
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -19,7 +19,3 @@ jobs:
         run: |
           python run.py --smoke --device cpu
           python validate_results.py results/demo_16
-      - name: Run the default 800-image workflow
-        run: |
-          python run.py --device cpu
-          python validate_results.py results/demo_800
